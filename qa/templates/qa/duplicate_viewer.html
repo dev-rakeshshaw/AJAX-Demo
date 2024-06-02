@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duplicate Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 15%;
+            /* Sidebar width */
+            background-color: #f2f2f2;
+            padding: 20px;
+        }
+
+        .content {
+            width: 85%;
+            /* Image viewer width */
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .date {
+            margin-bottom: 20px;
+        }
+
+        .date-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .date-info a {
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .date-info a:hover {
+            color: #000;
+        }
+
+        .date-info span {
+            margin-left: 10px;
+        }
+
+        .image-container {
+            width: calc(50% - 10px);
+            /* Adjust as needed */
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            box-sizing: border-box;
+            border-radius: 5px;
+            border: 1px solid #f50a0a;
+            /* Add border around image container */
+            height: 13%;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+            height: 50%;
+        }
+    </style>
+    <script>
+        function showImages(images) {
+            const imageViewer = document.getElementById('image-viewer');
+            imageViewer.innerHTML = '';  // Clear existing images
+            images.forEach(imageData => {
+                const imgElement = document.createElement('img');
+                imgElement.src = imageData.image_url;
+                imgElement.alt = imageData.name;
+
+                const imageContainer = document.createElement('div');
+                imageContainer.className = 'image-container';
+
+                const form = document.createElement('form');
+                // Remove action attribute to prevent default form submission
+                form.method = 'POST';
+
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault(); // Prevent default form submission
+
+                    // Gather form data
+                    const formData = new FormData(form);
+
+                    // Send form data using AJAX
+                    fetch('{% url "mark_duplicate" %}', { // Specify endpoint URL directly here
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => {
+                            // Handle response as needed
+                            if (response.ok) {
+                                // Handle success
+                                console.log('Form submitted successfully!');
+                            } else {
+                                // Handle error
+                                console.error('Form submission failed:', response.statusText);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
+                });
+
+                const inputFileId = document.createElement('input');
+                inputFileId.type = 'hidden';
+                inputFileId.name = 'file_id';
+                inputFileId.value = imageData.file_id;
+
+                const inputPageId = document.createElement('input');
+                inputPageId.type = 'hidden';
+                inputPageId.name = 'page_id';
+                inputPageId.value = imageData.page_id;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.name = 'mark_duplicate';
+                checkbox.value = 'yes';
+                checkbox.checked = imageData.is_duplicate === 'true';
+
+                const label = document.createElement('label');
+                label.textContent = 'Mark as duplicate';
+                label.appendChild(checkbox);
+
+                const submitButton = document.createElement('button');
+                submitButton.type = 'submit';
+                submitButton.textContent = 'Submit';
+
+                form.appendChild(imgElement);
+                form.appendChild(inputFileId);
+                form.appendChild(inputPageId);
+                form.appendChild(label);
+                form.appendChild(submitButton);
+
+                imageContainer.appendChild(form);
+                imageViewer.appendChild(imageContainer);
+            });
+        }
+    </script>
+
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>Dates</h2>
+        {% for date, images in date_images_dict.items %}
+        <div class="date">
+            <div class="date-info">
+                <a href="#" onclick="showImages({{ images|safe }}); return false;">{{ date }}</a>
+                <span>{{ images|length }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="content" id="image-viewer">
+        <h3>Image Viewer</h3>
+    </div>
+</body>
+
+</html>
